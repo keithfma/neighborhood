@@ -74,9 +74,9 @@ class Searcher():
         self.minimize = na_minimize
         self.num_dim = len(kwargs)
         self.limits = deepcopy(kwargs)
-        self._pmin = {n: v[0] for n, v in kwargs.items()}
-        self._prng = {n: v[1] - v[0] for n, v in kwargs.items()}
         self.Param = namedtuple('Param', kwargs.keys()) 
+        self.min_param = self.Param(**{n: v[0] for n, v in kwargs.items()})
+        self.max_param = self.Param(**{n: v[1] for n, v in kwargs.items()})
         self.population = []
         self.queue = []
         self.iter = 0
@@ -89,26 +89,28 @@ class Searcher():
             max_iter:
             tol:
         """
-        # TODO: loop until max iterations or tolerance threshold
         
-        # generate new sample (populates queue)
-        if not self.population:
-            self._random_sample()
-        else:
-            self._neighborhood_sample()
-        
-        # execute forward model for all samples in queue
-        while self.queue:
-            param = self.queue.pop()
-            result = self.objective(**param._asdict())
-            self.population.append((param, result, self.iter))
-        
-        # reorder population by misfit
-        self.population.sort(key=lambda x: x[1])
-        
-        
-        # update iteration counter
-        self.iter += 1
+        for ii in range(max_iter):
+            
+            # generate new sample (populates queue)
+            if not self.population:
+                self._random_sample()
+            else:
+                self._neighborhood_sample()
+            
+            # execute forward model for all samples in queue
+            while self.queue:
+                param = self.queue.pop()
+                result = self.objective(**param._asdict())
+                self.population.append((param, result, self.iter))
+            
+            # reorder population by misfit
+            self.population.sort(key=lambda x: x[1])
+            
+            # update iteration counter
+            self.iter += 1
+            
+            # TODO: check tolerance
         
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
@@ -118,23 +120,39 @@ class Searcher():
 
     def _neighborhood_sample(self):
         """Generate random samples in best Voronoi polygons"""
+        
         for ii in range(self.num_samp):
             
             # get starting point and all other points as arrays
             kk = ii % self.num_resamp  # index of start point
             vk = np.array(self.population[kk][0])
             vj = np.array([x[0] for j, x in enumerate(self.population) if j != kk])
-            set_trace()
+            xx = vk.copy()
             
-            # NOTE: distances are always along one dimension -- do I really
-            #   need to normalize?
+            # get initial distance to ith-axis (where i == 0)
+            d2ki = 0.0
+            d2ji = np.sum(np.square(vj[:,1:] - xx[1:]), axis=1)
             
-    def _param_to_pt(self, param):
-        """Convert parameter object to point in normalized parameter space"""
-        pt = [(v - self._pmin[n])/self._prng[n] for n, v in param._asdict().items()]
-        return np.array(pt)
-
-    # TODO: include a plot of the best objective function value per iteration
+            # random step within voronoi polygon in each dimension
+            for ii in range(self.num_dim):
+                
+                # find limits of voronoi polygon
+                xji = 0.5*(vk[ii] + vj[:,ii] + (d2ki - d2ji)/(vk[ii] - vj[:,ii]))
+                low = np.max(np.append(xji[xji <= xx[ii]], self.min_param[ii]))
+                high = np.min(np.append(xji[xji >= xx[ii]], self.max_param[ii]))
+                
+                # random move within voronoi polygon
+                xx[ii] = uniform(low, high)
+                
+                # update distance to next axis
+                if ii < (self.num_dim - 1):
+                    d2ki += (np.square(vj[:,ii  ] - xx[ii  ]) - 
+                             np.square(vj[:,ii+1] - xx[ii+1]))
+            
+            # update queue
+            new = self.Param(*xx)
+            self.queue.append(new)
+                
 
     def plot(polygons=False, marginals=False):
         """
@@ -206,8 +224,8 @@ def demo_search():
     """
     srch = Searcher(
         na_objective=_rosenbrock,
-        na_num_samp=10,
-        na_num_resamp=2,
+        na_num_samp=100,
+        na_num_resamp=50,
         na_minimize=True,
         xx=(0, 2),  # param to objective function
         yy=(0,2)    # param to objective function
