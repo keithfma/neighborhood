@@ -8,6 +8,7 @@ from copy import deepcopy
 from collections import namedtuple
 from random import uniform
 import numpy as np
+from pdb import set_trace
 
 
 logger = logging.Logger(__name__)
@@ -105,6 +106,7 @@ class Searcher():
         # reorder population by misfit
         self.population.sort(key=lambda x: x[1])
         
+        
         # update iteration counter
         self.iter += 1
         
@@ -118,11 +120,11 @@ class Searcher():
         """Generate random samples in best Voronoi polygons"""
         for ii in range(self.num_samp):
             
-            # get starting point from num_resamp best samples
-            start_idx = ii % self.num_resamp
-            start_param = self.population[start_idx][0]
-            start_pt = self._param_to_pt(start_param)
-            print(start_pt)
+            # get starting point and all other points as arrays
+            kk = ii % self.num_resamp  # index of start point
+            vk = np.array(self.population[kk][0])
+            vj = np.array([x[0] for j, x in enumerate(self.population) if j != kk])
+            set_trace()
             
             # NOTE: distances are always along one dimension -- do I really
             #   need to normalize?
