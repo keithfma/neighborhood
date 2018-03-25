@@ -7,6 +7,7 @@ import logging
 from copy import deepcopy
 from collections import namedtuple
 from random import uniform
+import numpy as np
 
 
 logger = logging.Logger(__name__)
@@ -72,6 +73,8 @@ class Searcher():
         self.minimize = na_minimize
         self.num_dim = len(kwargs)
         self.limits = deepcopy(kwargs)
+        self._pmin = {n: v[0] for n, v in kwargs.items()}
+        self._prng = {n: v[1] - v[0] for n, v in kwargs.items()}
         self.Param = namedtuple('Param', kwargs.keys()) 
         self.population = []
         self.queue = []
@@ -113,7 +116,21 @@ class Searcher():
 
     def _neighborhood_sample(self):
         """Generate random samples in best Voronoi polygons"""
-        raise NotImplementedError
+        for ii in range(self.num_samp):
+            
+            # get starting point from num_resamp best samples
+            start_idx = ii % self.num_resamp
+            start_param = self.population[start_idx][0]
+            start_pt = self._param_to_pt(start_param)
+            print(start_pt)
+            
+            # NOTE: distances are always along one dimension -- do I really
+            #   need to normalize?
+            
+    def _param_to_pt(self, param):
+        """Convert parameter object to point in normalized parameter space"""
+        pt = [(v - self._pmin[n])/self._prng[n] for n, v in param._asdict().items()]
+        return np.array(pt)
 
     # TODO: include a plot of the best objective function value per iteration
 
