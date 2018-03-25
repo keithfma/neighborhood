@@ -6,6 +6,7 @@ Neighborhood algorithm direct-search optimization
 import logging
 from copy import deepcopy
 from collections import namedtuple
+from random import uniform
 
 
 logger = logging.Logger(__name__)
@@ -57,14 +58,26 @@ class Searcher():
         # # na_minimize
         if not isinstance(na_minimize, bool):
             raise TypeError('na_minimize must be boolean: True or False')
+        # # parameter range limits
+        for name, lim in kwargs.items():
+            if len(lim) != 2:
+                raise TypeError('"{}" limits must have length 2'.format(name))
+            if lim[1] <= lim[0]:
+                raise ValueError('"{}" limits must be increasing'.format(name))
         
         # populate internal constants, etc
-        self.param_limits = deepcopy(kwargs)
-        self.num_dim = len(self.param_limits)
-        self.Param = namedtuple('Param', kwargs.keys()) # type for parameter vectors
+        self.objective = na_objective
+        self.num_samp = na_num_samp
+        self.num_resamp = na_num_resamp
+        self.minimize = na_minimize
+        self.num_dim = len(kwargs)
+        self.limits = deepcopy(kwargs)
+        self.Param = namedtuple('Param', kwargs.keys()) 
         self.population = []
+        self.queue = []
+        self.iter = 0
 
-    def update(max_iter=10, tol=1.0e-3):
+    def update(self, max_iter=10, tol=1.0e-3):
         """
         Execute search until iteration limit or improvement tolerance is reached
         
@@ -72,7 +85,37 @@ class Searcher():
             max_iter:
             tol:
         """
+        # TODO: loop until max iterations or tolerance threshold
+        
+        # generate new sample (populates queue)
+        if not self.population:
+            self._random_sample()
+        else:
+            self._neighborhood_sample()
+        
+        # execute forward model for all samples in queue
+        while self.queue:
+            param = self.queue.pop()
+            result = self.objective(**param._asdict())
+            self.population.append((param, result, self.iter))
+        
+        # reorder population by misfit
+        self.population.sort(key=lambda x: x[1])
+        
+        # update iteration counter
+        self.iter += 1
+        
+    def _random_sample(self):
+        """Generate uniform random sample for initial iteration"""
+        for ii in range(self.num_samp):
+            new = {k: uniform(*v) for k, v in self.limits.items()}
+            self.queue.append(self.Param(**new))
+
+    def _neighborhood_sample(self):
+        """Generate random samples in best Voronoi polygons"""
         raise NotImplementedError
+
+    # TODO: include a plot of the best objective function value per iteration
 
     def plot(polygons=False, marginals=False):
         """
