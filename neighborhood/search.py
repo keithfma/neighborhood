@@ -16,7 +16,8 @@ logger = logging.Logger(__name__)
 
 class Searcher():
     
-    def __init__(self, na_objective, na_num_samp, na_num_resamp, na_minimize=True, **kwargs):
+    def __init__(self, na_objective, na_num_samp, na_num_resamp, na_num_init,
+                 na_minimize=True, **kwargs):
         """
         Neighborhood algorithm direct-search optimization
         
@@ -28,6 +29,7 @@ class Searcher():
             na_num_samp: int, number of random samples taken at each iteration.
             na_num_resamp: int, number of best Voronoi polygons sampled at
                 each iteration.
+            na_num_init: int, size of initial population 
             na_minimize: boolean, set True to minimize the objective function,
                 or false to maximize it.
             **kwargs: objective function parameter limits, each provided as
@@ -52,11 +54,16 @@ class Searcher():
             raise ValueError('"na_num_samp" must be positive')
         # # na_num_resamp
         if int(na_num_resamp) != na_num_resamp: 
-            raise TypeError('"na_num_resamp" must be a positive integer')
+            raise TypeError('"na_num_resamp" must be an integer')
         if na_num_resamp < 1:
             raise ValueError('"na_num_resamp" must be positive')    
         if na_num_resamp > na_num_samp:
             raise ValueError('"na_num_resamp must be <= "na_num_samp"')
+        # # na_num_init
+        if int(na_num_init) != na_num_init:
+            raise TypeError('"na_num_init" must be an integer' )
+        if na_num_init < 1: 
+            raise ValueError('"na_num_init" must be positive')
         # # na_minimize
         if not isinstance(na_minimize, bool):
             raise TypeError('na_minimize must be boolean: True or False')
@@ -71,6 +78,7 @@ class Searcher():
         self.objective = na_objective
         self.num_samp = na_num_samp
         self.num_resamp = na_num_resamp
+        self.num_init = na_num_init
         self.minimize = na_minimize
         self.num_dim = len(kwargs)
         self.limits = deepcopy(kwargs)
@@ -114,7 +122,7 @@ class Searcher():
         
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
-        for ii in range(self.num_samp):
+        for ii in range(self.num_init):
             new = {k: uniform(*v) for k, v in self.limits.items()}
             self.queue.append(self.Param(**new))
 
@@ -224,10 +232,11 @@ def demo_search():
     """
     srch = Searcher(
         na_objective=_rosenbrock,
-        na_num_samp=100,
-        na_num_resamp=50,
+        na_num_samp=50,
+        na_num_resamp=25,
+        na_num_init=50,
         na_minimize=True,
-        xx=(0, 2),  # param to objective function
+        xx=(0,2),  # param to objective function
         yy=(0,2)    # param to objective function
         )
 
