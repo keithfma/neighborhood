@@ -3,6 +3,10 @@
 Neighborhood algorithm direct-search optimization
 """
 
+# TODO: optimize serial code
+# TODO: implement in parallel
+# TODO: add higher dimensional example case
+
 import logging
 from copy import deepcopy
 from collections import namedtuple
@@ -17,7 +21,7 @@ logger = logging.Logger(__name__)
 class Searcher():
     
     def __init__(self, na_objective, na_num_samp, na_num_resamp, na_num_init,
-                 na_minimize=True, **kwargs):
+                 na_maximize=True, **kwargs):
         """
         Neighborhood algorithm direct-search optimization
         
@@ -30,8 +34,8 @@ class Searcher():
             na_num_resamp: int, number of best Voronoi polygons sampled at
                 each iteration.
             na_num_init: int, size of initial population 
-            na_minimize: boolean, set True to minimize the objective function,
-                or false to maximize it.
+            na_maximize: boolean, set True to maximize the objective function,
+                or false to minimize it.
             **kwargs: objective function parameter limits, each provided as
                 name=(min_val, max_val), converted internally to a dictionary.
                 Parameter names *must not* be the same as the input arguments
@@ -64,9 +68,9 @@ class Searcher():
             raise TypeError('"na_num_init" must be an integer' )
         if na_num_init < 1: 
             raise ValueError('"na_num_init" must be positive')
-        # # na_minimize
-        if not isinstance(na_minimize, bool):
-            raise TypeError('na_minimize must be boolean: True or False')
+        # # na_maximize
+        if not isinstance(na_maximize, bool):
+            raise TypeError('na_maximize must be boolean: True or False')
         # # parameter range limits
         for name, lim in kwargs.items():
             if len(lim) != 2:
@@ -79,23 +83,23 @@ class Searcher():
         self.num_samp = na_num_samp
         self.num_resamp = na_num_resamp
         self.num_init = na_num_init
-        self.minimize = na_minimize
+        self.maximize = na_maximize
         self.num_dim = len(kwargs)
         self.limits = deepcopy(kwargs)
         self.Param = namedtuple('Param', kwargs.keys()) 
         self.min_param = self.Param(**{n: v[0] for n, v in kwargs.items()})
         self.max_param = self.Param(**{n: v[1] for n, v in kwargs.items()})
+        # TODO: convert population to a dict for clarity
         self.population = []
         self.queue = []
         self.iter = 0
 
     def update(self, max_iter=10, tol=1.0e-3):
         """
-        Execute search until iteration limit or improvement tolerance is reached
+        Execute search algorithm for specified number of iterations
         
         Arguments:
-            max_iter:
-            tol:
+            num_iter: int, number of iterations to run
         """
         
         for ii in range(max_iter):
@@ -112,14 +116,10 @@ class Searcher():
                 result = self.objective(**param._asdict())
                 self.population.append((param, result, self.iter))
             
-            # reorder population by misfit
-            self.population.sort(key=lambda x: x[1])
-            
-            # update iteration counter
+            # prepare for next iteration
+            self.population.sort(key=lambda x: x[1], reverse=self.maximize)
             self.iter += 1
-            
-            # TODO: check tolerance
-        
+
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
         for ii in range(self.num_init):
@@ -175,33 +175,12 @@ class Searcher():
             marginals: Plot marginal histograms for each parameter
         """
         raise NotImplementedError
-        
-    def dump(self, filename, clobber=False):
-        """
-        Save current optimizer state to file as pickle
-        
-        Arguments:
-            filename: string, filename for saved result
-            clobber: set True to overwrite existing file, otherwise if
-                "filename" exists, a timestamp is appended to make it unique
-        """
-        raise NotImplementedError
     
-    @classmethod
-    def load(cls, filename):
-        """
-        Load optimizer from pickle file
-        
-        Arguments:
-            filename: string filename of saved result to load
-        
-        Returns: Searcher object loaded from file
-        """
-        raise NotImplementedError
-
-    # def __repr__(self): # TODO
+    # TODO    
+    # def __repr__(self):
     
-    # def __str__(self): # TODO
+    # TODO    
+    # def __str__(self):
 
 
 def _rosenbrock(xx, yy, aa=1.0, bb=100.0):
@@ -235,10 +214,10 @@ def demo_search():
         na_num_samp=50,
         na_num_resamp=25,
         na_num_init=50,
-        na_minimize=True,
+        na_maximize=True,
         xx=(0,2),  # param to objective function
         yy=(0,2)    # param to objective function
         )
-
-    # debug
+    srch.update(10)
+    # TODO: plot, once this is implemented    
     return srch
