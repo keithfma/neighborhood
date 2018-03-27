@@ -3,11 +3,10 @@
 Neighborhood algorithm direct-search optimization
 """
 
-# TODO: optimize serial code
+# TODO: work in normalized dimensions internally, return dimensional
 # TODO: implement in parallel
 # TODO: add higher dimensional example case
 
-import logging
 from copy import deepcopy
 from collections import namedtuple
 from random import uniform
@@ -15,13 +14,10 @@ import numpy as np
 from pdb import set_trace
 
 
-logger = logging.Logger(__name__)
-
-
 class Searcher():
     
     def __init__(self, na_objective, na_num_samp, na_num_resamp, na_num_init,
-                 na_maximize=False, **kwargs):
+                 na_maximize=False, na_verbose=True, **kwargs):
         """
         Neighborhood algorithm direct-search optimization
         
@@ -36,6 +32,7 @@ class Searcher():
             na_num_init: int, size of initial population 
             na_maximize: boolean, set True to maximize the objective function,
                 or false to minimize it.
+            na_verbose: set True to print verbose progress messages
             **kwargs: objective function parameter limits, each provided as
                 name=(min_val, max_val), converted internally to a dictionary.
                 Parameter names *must not* be the same as the input arguments
@@ -71,6 +68,9 @@ class Searcher():
         # # na_maximize
         if not isinstance(na_maximize, bool):
             raise TypeError('na_maximize must be boolean: True or False')
+        # # na_verbose
+        if not isinstance(na_verbose, bool):
+            raise TypeError('na_verbose must be boolean: True or False')
         # # parameter range limits
         for name, lim in kwargs.items():
             if len(lim) != 2:
@@ -84,6 +84,7 @@ class Searcher():
         self.num_resamp = na_num_resamp
         self.num_init = na_num_init
         self.maximize = na_maximize
+        self.verbose = na_verbose
         self.num_dim = len(kwargs)
         self.limits = deepcopy(kwargs)
         self.Param = namedtuple('Param', kwargs.keys()) 
@@ -122,6 +123,9 @@ class Searcher():
             # prepare for next iteration
             self.population.sort(key=lambda x: x['result'], reverse=self.maximize)
             self.iter += 1
+            if self.verbose:
+                print('iter: {}, pop size: {}, objective: {}'.format(self.iter,
+                      len(self.population), self.population[0]['result']))
 
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
@@ -133,6 +137,11 @@ class Searcher():
         """Generate random samples in best Voronoi polygons"""
         
         vv = np.array([x['param'] for x in self.population])
+        
+        # DEBUG: normalize
+        flr = np.array(self.min_param)
+        rng = np.array(self.max_param) - np.array(self.min_param)
+        vv = (vv - flr)/rng
         
         for ii in range(self.num_samp):
             
@@ -169,6 +178,9 @@ class Searcher():
                 if ii < (self.num_dim - 1):
                     d2ki += (np.square(vj[:,ii  ] - xx[ii  ]) - 
                              np.square(vj[:,ii+1] - xx[ii+1]))
+            
+            # DEBUG: un-normalize
+            xx = xx*rng + flr
             
             # update queue
             new = self.Param(*xx)
@@ -224,9 +236,9 @@ def demo_search():
     """
     srch = Searcher(
         na_objective=_rosenbrock,
-        na_num_samp=50,
-        na_num_resamp=25,
-        na_num_init=50,
+        na_num_samp=900,
+        na_num_resamp=450,
+        na_num_init=900,
         na_maximize=False,
         xx=(0,2),  # param to objective function
         yy=(0,2)    # param to objective function
@@ -239,4 +251,4 @@ def demo_search():
 
 
 if __name__ == '__main__':
-    demo_search()
+    s = demo_search()
