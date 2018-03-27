@@ -3,14 +3,12 @@
 Neighborhood algorithm direct-search optimization
 """
 
-# TODO: work in normalized dimensions internally, return dimensional
-# TODO: implement in parallel
-# TODO: add higher dimensional example case
-
 from copy import deepcopy
 from collections import namedtuple
 from random import uniform
 import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 
 
 class Searcher():
@@ -94,6 +92,14 @@ class Searcher():
         self.queue = []
         self.iter = 0
 
+    def as_dataframe(self):
+        """Return sampled population as Pandas dataframe"""
+        pop = [{'objective': x['result'], **(x['param']._asdict())}
+                for x in self.population] 
+        return pd.DataFrame(pop)
+    
+    # TODO: implement a few more output formats
+        
     def update(self, max_iter=10, tol=1.0e-3):
         """
         Execute search algorithm for specified number of iterations
@@ -180,21 +186,22 @@ class Searcher():
             # update queue
             xx = xx*self.rng_param + self.min_param # un-normalize
             self.queue.append(self.Param(*xx))
-                
 
-    def plot(polygons=False, marginals=False):
+    def plot(self):
         """
-        Plot of objective function values for current population
-        
-        Displays pair-wise plots for all parameter combinations. Optionally,
-        can include filled voronoi polygons (use only for *small* populations)
-        and marginal histograms for each parameter.
-        
-        Arguments:
-            polygons: Plot filled Voronoi polygons
-            marginals: Plot marginal histograms for each parameter
+        Display pair-plots of objective function values for current population
         """
-        raise NotImplementedError
+        if self.num_dim == 2:
+            df = self.as_dataframe()
+            df.plot.scatter(
+                x=df.columns[1],
+                y=df.columns[2],
+                c='objective',
+                colormap=plt.get_cmap('plasma')
+                )
+            plt.show()        
+        else:
+            raise NotImplementedError('Plotting not yet implemented in > 2D')
     
     # TODO    
     # def __repr__(self):
@@ -203,6 +210,8 @@ class Searcher():
     # def __str__(self):
 
 
+# TODO: generalize to higher dimensions
+#   see: https://en.wikipedia.org/wiki/Rosenbrock_function
 def _rosenbrock(xx, yy, aa=1.0, bb=100.0):
     """
     Rosenbrock 2D objective function, a common optimization performance test
@@ -239,9 +248,7 @@ def demo_search():
         yy=(-0.5, 3.0)   # param to objective function
         )
     srch.update(20)
-    # TODO: plot, once this is implemented  
-    # print best
-    print(srch.population[0])
+    srch.plot()
     return srch
 
 
