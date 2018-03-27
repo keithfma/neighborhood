@@ -3,7 +3,6 @@
 Neighborhood algorithm direct-search optimization
 """
 
-# TODO: work in normalized dimensions internally, return dimensional
 # TODO: implement in parallel
 # TODO: add higher dimensional example case
 
@@ -140,10 +139,11 @@ class Searcher():
         vv = np.array([x['param'] for x in self.population])
         vv = (vv - self.min_param)/self.rng_param # normalize
         
-        for ii in range(self.num_samp):
+        def _sample_one(count):
+            """worker function used to parallelize sampling process"""
             
             # get starting point and all other points as arrays
-            kk = ii % self.num_resamp  # index of start point            
+            kk = count % self.num_resamp  # index of start point            
             vk = vv[kk,:]
             vj = np.delete(vv, kk, 0)
             xx = vk.copy()
@@ -178,8 +178,10 @@ class Searcher():
                         
             # update queue
             xx = xx*self.rng_param + self.min_param # un-normalize
-            self.queue.append(self.Param(*xx))
-                
+            return self.Param(*xx)
+        
+        # sample all (in serial) and update queue
+        self.queue = [_sample_one(count) for count in range(self.num_samp)]
 
     def plot(polygons=False, marginals=False):
         """
