@@ -90,6 +90,7 @@ class Searcher():
         self.Param = namedtuple('Param', kwargs.keys()) 
         self.min_param = self.Param(**{n: v[0] for n, v in kwargs.items()})
         self.max_param = self.Param(**{n: v[1] for n, v in kwargs.items()})
+        self.rng_param = self.Param(**{n: v[1] - v[0] for n, v in kwargs.items()})
         self.population = []
         self.queue = []
         self.iter = 0
@@ -137,11 +138,7 @@ class Searcher():
         """Generate random samples in best Voronoi polygons"""
         
         vv = np.array([x['param'] for x in self.population])
-        
-        # DEBUG: normalize
-        flr = np.array(self.min_param)
-        rng = np.array(self.max_param) - np.array(self.min_param)
-        vv = (vv - flr)/rng
+        vv = (vv - self.min_param)/self.rng_param # normalize
         
         for ii in range(self.num_samp):
             
@@ -178,13 +175,10 @@ class Searcher():
                 if ii < (self.num_dim - 1):
                     d2ki += (np.square(vj[:,ii  ] - xx[ii  ]) - 
                              np.square(vj[:,ii+1] - xx[ii+1]))
-            
-            # DEBUG: un-normalize
-            xx = xx*rng + flr
-            
+                        
             # update queue
-            new = self.Param(*xx)
-            self.queue.append(new)
+            xx = xx*self.rng_param + self.min_param # un-normalize
+            self.queue.append(self.Param(*xx))
                 
 
     def plot(polygons=False, marginals=False):
