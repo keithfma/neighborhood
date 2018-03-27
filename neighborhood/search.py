@@ -201,12 +201,15 @@ class Searcher():
         else:
             raise NotImplementedError('Plotting not yet implemented in > 2D')
     
-    # TODO    
-    # def __repr__(self):
+    def __repr__(self):
+        try:
+            out = '{}(pop_size={}, best={:.6e})'.format(
+                self.__class__.__name__, len(self.population), 
+                self.population[0]['result'])
+        except IndexError:
+            out = '{}(pop_size=0)'.format(self.__class__.__name__)
+        return out
     
-    # TODO    
-    # def __str__(self):
-
 
 # TODO: generalize to higher dimensions
 #   see: https://en.wikipedia.org/wiki/Rosenbrock_function
@@ -248,7 +251,3 @@ def demo_search():
     srch.update(20)
     srch.plot()
     return srch
-
-
-if __name__ == '__main__':
-    s = demo_search()
