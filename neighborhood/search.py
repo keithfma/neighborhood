@@ -21,7 +21,7 @@ logger = logging.Logger(__name__)
 class Searcher():
     
     def __init__(self, na_objective, na_num_samp, na_num_resamp, na_num_init,
-                 na_maximize=True, **kwargs):
+                 na_maximize=False, **kwargs):
         """
         Neighborhood algorithm direct-search optimization
         
@@ -89,7 +89,6 @@ class Searcher():
         self.Param = namedtuple('Param', kwargs.keys()) 
         self.min_param = self.Param(**{n: v[0] for n, v in kwargs.items()})
         self.max_param = self.Param(**{n: v[1] for n, v in kwargs.items()})
-        # TODO: convert population to a dict for clarity
         self.population = []
         self.queue = []
         self.iter = 0
@@ -114,10 +113,14 @@ class Searcher():
             while self.queue:
                 param = self.queue.pop()
                 result = self.objective(**param._asdict())
-                self.population.append((param, result, self.iter))
+                self.population.append({
+                    'param': param,
+                    'result': result,
+                    'iter': self.iter
+                    })
             
             # prepare for next iteration
-            self.population.sort(key=lambda x: x[1], reverse=self.maximize)
+            self.population.sort(key=lambda x: x['result'], reverse=self.maximize)
             self.iter += 1
 
     def _random_sample(self):
@@ -129,12 +132,14 @@ class Searcher():
     def _neighborhood_sample(self):
         """Generate random samples in best Voronoi polygons"""
         
+        vv = np.array([x['param'] for x in self.population])
+        
         for ii in range(self.num_samp):
             
             # get starting point and all other points as arrays
-            kk = ii % self.num_resamp  # index of start point
-            vk = np.array(self.population[kk][0])
-            vj = np.array([x[0] for j, x in enumerate(self.population) if j != kk])
+            kk = ii % self.num_resamp  # index of start point            
+            vk = vv[kk,:]
+            vj = np.delete(vv, kk, 0)
             xx = vk.copy()
             
             # get initial distance to ith-axis (where i == 0)
@@ -146,9 +151,17 @@ class Searcher():
                 
                 # find limits of voronoi polygon
                 xji = 0.5*(vk[ii] + vj[:,ii] + (d2ki - d2ji)/(vk[ii] - vj[:,ii]))
-                low = np.max(np.append(xji[xji <= xx[ii]], self.min_param[ii]))
-                high = np.min(np.append(xji[xji >= xx[ii]], self.max_param[ii]))
-                
+                try:
+                    lte = xji[xji <= xx[ii]]
+                    low = max(np.max(lte), self.min_param[ii])
+                except ValueError: # no points <= current point
+                    low = self.min_param[ii]
+                try:
+                    gte = xji[xji >= xx[ii]]
+                    high = min(np.min(gte), self.max_param[ii])
+                except ValueError: # no points >= current point
+                    high = self.max_param[ii]
+
                 # random move within voronoi polygon
                 xx[ii] = uniform(low, high)
                 
@@ -214,10 +227,16 @@ def demo_search():
         na_num_samp=50,
         na_num_resamp=25,
         na_num_init=50,
-        na_maximize=True,
+        na_maximize=False,
         xx=(0,2),  # param to objective function
         yy=(0,2)    # param to objective function
         )
-    srch.update(10)
-    # TODO: plot, once this is implemented    
+    srch.update(20)
+    # TODO: plot, once this is implemented  
+    # print best
+    print(srch.population[0])
     return srch
+
+
+if __name__ == '__main__':
+    demo_search()
