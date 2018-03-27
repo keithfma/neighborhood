@@ -115,7 +115,7 @@ class Searcher():
                 self._random_sample()
             else:
                 self._neighborhood_sample()
-            
+                        
             # execute forward model for all samples in queue
             while self.queue:
                 param = self.queue.pop()
@@ -163,15 +163,13 @@ class Searcher():
                 # find limits of voronoi polygon
                 xji = 0.5*(vk[ii] + vj[:,ii] + (d2ki - d2ji)/(vk[ii] - vj[:,ii]))
                 try:
-                    lte = xji[xji <= xx[ii]]
-                    low = max(np.max(lte), 0.0)
+                    low = max(0.0, np.max(xji[xji <= xx[ii]]))
                 except ValueError: # no points <= current point
-                    low = self.min_param[ii]
+                    low = 0.0
                 try:
-                    gte = xji[xji >= xx[ii]]
-                    high = min(np.min(gte), 1.0)
+                    high = min(1.0, np.min(xji[xji >= xx[ii]]))
                 except ValueError: # no points >= current point
-                    high = self.max_param[ii]
+                    high = 1.0
 
                 # random move within voronoi polygon
                 xx[ii] = uniform(low, high)
@@ -182,9 +180,9 @@ class Searcher():
                              np.square(vk[ii+1] - xx[ii+1]))
                     d2ji += (np.square(vj[:,ii  ] - xx[ii  ]) - 
                              np.square(vj[:,ii+1] - xx[ii+1]))
-                        
+                    
             # update queue
-            xx = xx*self.rng_param + self.min_param # un-normalize
+            xx = xx*self.rng_param + self.min_param # un-normalize    
             self.queue.append(self.Param(*xx))
 
     def plot(self):
