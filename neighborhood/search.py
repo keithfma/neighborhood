@@ -11,7 +11,6 @@ from copy import deepcopy
 from collections import namedtuple
 from random import uniform
 import numpy as np
-from pdb import set_trace
 
 
 class Searcher():
@@ -159,12 +158,12 @@ class Searcher():
                 xji = 0.5*(vk[ii] + vj[:,ii] + (d2ki - d2ji)/(vk[ii] - vj[:,ii]))
                 try:
                     lte = xji[xji <= xx[ii]]
-                    low = max(np.max(lte), self.min_param[ii])
+                    low = max(np.max(lte), 0.0)
                 except ValueError: # no points <= current point
                     low = self.min_param[ii]
                 try:
                     gte = xji[xji >= xx[ii]]
-                    high = min(np.min(gte), self.max_param[ii])
+                    high = min(np.min(gte), 1.0)
                 except ValueError: # no points >= current point
                     high = self.max_param[ii]
 
@@ -173,7 +172,9 @@ class Searcher():
                 
                 # update distance to next axis
                 if ii < (self.num_dim - 1):
-                    d2ki += (np.square(vj[:,ii  ] - xx[ii  ]) - 
+                    d2ki += (np.square(vk[ii  ] - xx[ii  ]) - 
+                             np.square(vk[ii+1] - xx[ii+1]))
+                    d2ji += (np.square(vj[:,ii  ] - xx[ii  ]) - 
                              np.square(vj[:,ii+1] - xx[ii+1]))
                         
             # update queue
@@ -234,8 +235,8 @@ def demo_search():
         na_num_resamp=450,
         na_num_init=900,
         na_maximize=False,
-        xx=(0,2),  # param to objective function
-        yy=(0,2)    # param to objective function
+        xx=(-1.5, 1.5),  # param to objective function
+        yy=(-0.5, 3.0)   # param to objective function
         )
     srch.update(20)
     # TODO: plot, once this is implemented  
