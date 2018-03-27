@@ -3,14 +3,12 @@
 Neighborhood algorithm direct-search optimization
 """
 
-# TODO: work in normalized dimensions internally, return dimensional
-# TODO: implement in parallel
-# TODO: add higher dimensional example case
-
 from copy import deepcopy
 from collections import namedtuple
 from random import uniform
 import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 
 
 class Searcher():
@@ -94,6 +92,14 @@ class Searcher():
         self.queue = []
         self.iter = 0
 
+    def as_dataframe(self):
+        """Return sampled population as Pandas dataframe"""
+        pop = [{'objective': x['result'], **(x['param']._asdict())}
+                for x in self.population] 
+        return pd.DataFrame(pop)
+    
+    # TODO: implement a few more output formats
+        
     def update(self, max_iter=10, tol=1.0e-3):
         """
         Execute search algorithm for specified number of iterations
@@ -109,7 +115,7 @@ class Searcher():
                 self._random_sample()
             else:
                 self._neighborhood_sample()
-            
+                        
             # execute forward model for all samples in queue
             while self.queue:
                 param = self.queue.pop()
@@ -157,15 +163,13 @@ class Searcher():
                 # find limits of voronoi polygon
                 xji = 0.5*(vk[ii] + vj[:,ii] + (d2ki - d2ji)/(vk[ii] - vj[:,ii]))
                 try:
-                    lte = xji[xji <= xx[ii]]
-                    low = max(np.max(lte), 0.0)
+                    low = max(0.0, np.max(xji[xji <= xx[ii]]))
                 except ValueError: # no points <= current point
-                    low = self.min_param[ii]
+                    low = 0.0
                 try:
-                    gte = xji[xji >= xx[ii]]
-                    high = min(np.min(gte), 1.0)
+                    high = min(1.0, np.min(xji[xji >= xx[ii]]))
                 except ValueError: # no points >= current point
-                    high = self.max_param[ii]
+                    high = 1.0
 
                 # random move within voronoi polygon
                 xx[ii] = uniform(low, high)
@@ -176,33 +180,39 @@ class Searcher():
                              np.square(vk[ii+1] - xx[ii+1]))
                     d2ji += (np.square(vj[:,ii  ] - xx[ii  ]) - 
                              np.square(vj[:,ii+1] - xx[ii+1]))
-                        
+                    
             # update queue
-            xx = xx*self.rng_param + self.min_param # un-normalize
+            xx = xx*self.rng_param + self.min_param # un-normalize    
             self.queue.append(self.Param(*xx))
-                
 
-    def plot(polygons=False, marginals=False):
+    def plot(self):
         """
-        Plot of objective function values for current population
-        
-        Displays pair-wise plots for all parameter combinations. Optionally,
-        can include filled voronoi polygons (use only for *small* populations)
-        and marginal histograms for each parameter.
-        
-        Arguments:
-            polygons: Plot filled Voronoi polygons
-            marginals: Plot marginal histograms for each parameter
+        Display pair-plots of objective function values for current population
         """
-        raise NotImplementedError
+        if self.num_dim == 2:
+            df = self.as_dataframe()
+            df.plot.scatter(
+                x=df.columns[1],
+                y=df.columns[2],
+                c='objective',
+                colormap=plt.get_cmap('plasma')
+                )
+            plt.show()        
+        else:
+            raise NotImplementedError('Plotting not yet implemented in > 2D')
     
-    # TODO    
-    # def __repr__(self):
+    def __repr__(self):
+        try:
+            out = '{}(pop_size={}, best={:.6e})'.format(
+                self.__class__.__name__, len(self.population), 
+                self.population[0]['result'])
+        except IndexError:
+            out = '{}(pop_size=0)'.format(self.__class__.__name__)
+        return out
     
-    # TODO    
-    # def __str__(self):
 
-
+# TODO: generalize to higher dimensions
+#   see: https://en.wikipedia.org/wiki/Rosenbrock_function
 def _rosenbrock(xx, yy, aa=1.0, bb=100.0):
     """
     Rosenbrock 2D objective function, a common optimization performance test
@@ -239,11 +249,5 @@ def demo_search():
         yy=(-0.5, 3.0)   # param to objective function
         )
     srch.update(20)
-    # TODO: plot, once this is implemented  
-    # print best
-    print(srch.population[0])
+    srch.plot()
     return srch
-
-
-if __name__ == '__main__':
-    s = demo_search()
