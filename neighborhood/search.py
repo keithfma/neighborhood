@@ -10,6 +10,7 @@ from copy import deepcopy
 from collections import namedtuple
 from random import uniform
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from pdb import set_trace
 
 
@@ -180,8 +181,13 @@ class Searcher():
             xx = xx*self.rng_param + self.min_param # un-normalize
             return self.Param(*xx)
         
-        # sample all (in serial) and update queue
-        self.queue = [_sample_one(count) for count in range(self.num_samp)]
+        # sample all (in parallel) and update queue
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future = executor.map(_sample_one, range(self.num_samp), chunksize=450)
+            self.queue = list(future)
+
+#        # sample all (in serial) and update queue
+#        self.queue = [_sample_one(count) for count in range(self.num_samp)]
 
     def plot(polygons=False, marginals=False):
         """
