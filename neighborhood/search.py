@@ -4,7 +4,7 @@ Neighborhood algorithm direct-search optimization
 """
 
 from copy import deepcopy
-from collections import namedtuple
+import collections
 from random import uniform
 import numpy as np
 import pandas as pd
@@ -13,92 +13,82 @@ from matplotlib import pyplot as plt
 
 class Searcher():
     
-    def __init__(self, na_objective, na_num_samp, na_num_resamp, na_num_init,
-                 na_maximize=False, na_verbose=True, **kwargs):
+    def __init__(self, objective, limits, num_samp, num_resamp, maximize=False, verbose=True):
         """
         Neighborhood algorithm direct-search optimization
         
         Arguments:
-            na_objective: callable returning a scalar misfit value, inputs are
-                scalar keyword arguments, the paraameter names and limits are
-                set by additional keyword arguments to this constructor
-                (captured by **kwargs).
-            na_num_samp: int, number of random samples taken at each iteration.
-            na_num_resamp: int, number of best Voronoi polygons sampled at
+            objective: callable accepting a 1D numpy array of parameters, and
+                returning a scalar misfit value
+            limits: list of tuples defining range for each objective
+                function parameter, as [(min_val, max_val), ...]
+            num_samp: int, number of random samples taken at each iteration.
+            num_resamp: int, number of best Voronoi polygons sampled at
                 each iteration.
-            na_num_init: int, size of initial population 
-            na_maximize: boolean, set True to maximize the objective function,
+            maximize: boolean, set True to maximize the objective function,
                 or false to minimize it.
-            na_verbose: set True to print verbose progress messages
-            **kwargs: objective function parameter limits, each provided as
-                name=(min_val, max_val), converted internally to a dictionary.
-                Parameter names *must not* be the same as the input arguments
-                to this constructor -- they are prefixed with "na_" to make
-                collisions less likely.
+            verbose: set True to print verbose progress messages
         
         References:
             Sambridge, M. (1999). Geophysical inversion with a neighbourhood
             algorithm - I. Searching a parameter space. Geophysical Journal
             International, 138(2), 479–494.
         """
-        # check input types
-        # # na_objective
-        if not callable(na_objective):
-            raise TypeError('"na_objective" must be a callable')
-        # # na_num_samp
-        if int(na_num_samp) != na_num_samp:
-            raise TypeError('"na_num_samp" must be an integer')
-        if na_num_samp < 1:
-            raise ValueError('"na_num_samp" must be positive')
-        # # na_num_resamp
-        if int(na_num_resamp) != na_num_resamp: 
-            raise TypeError('"na_num_resamp" must be an integer')
-        if na_num_resamp < 1:
-            raise ValueError('"na_num_resamp" must be positive')    
-        if na_num_resamp > na_num_samp:
-            raise ValueError('"na_num_resamp must be <= "na_num_samp"')
-        # # na_num_init
-        if int(na_num_init) != na_num_init:
-            raise TypeError('"na_num_init" must be an integer' )
-        if na_num_init < 1: 
-            raise ValueError('"na_num_init" must be positive')
-        # # na_maximize
-        if not isinstance(na_maximize, bool):
-            raise TypeError('na_maximize must be boolean: True or False')
-        # # na_verbose
-        if not isinstance(na_verbose, bool):
-            raise TypeError('na_verbose must be boolean: True or False')
-        # # parameter range limits
-        for name, lim in kwargs.items():
-            if len(lim) != 2:
-                raise TypeError('"{}" limits must have length 2'.format(name))
-            if lim[1] <= lim[0]:
-                raise ValueError('"{}" limits must be increasing'.format(name))
-        
-        # populate internal constants, etc
-        self.objective = na_objective
-        self.num_samp = na_num_samp
-        self.num_resamp = na_num_resamp
-        self.num_init = na_num_init
-        self.maximize = na_maximize
-        self.verbose = na_verbose
-        self.num_dim = len(kwargs)
-        self.limits = deepcopy(kwargs)
-        self.Param = namedtuple('Param', kwargs.keys()) 
-        self.min_param = self.Param(**{n: v[0] for n, v in kwargs.items()})
-        self.max_param = self.Param(**{n: v[1] for n, v in kwargs.items()})
-        self.rng_param = self.Param(**{n: v[1] - v[0] for n, v in kwargs.items()})
-        self.population = []
-        self.queue = []
-        self.iter = 0
+        # store and validate input args
+        self._objective = objective
+        self._limits = deepcopy(limits)
+        self._num_samp = num_samp
+        self._num_resamp = num_resamp
+        self._maximize = maximize
+        self._verbose = verbose
+        self._validate_args()
 
-    def as_dataframe(self):
-        """Return sampled population as Pandas dataframe"""
-        pop = [{'objective': x['result'], **(x['param']._asdict())}
-                for x in self.population] 
-        return pd.DataFrame(pop)
-    
-    # TODO: implement a few more output formats
+        # init constants and working vars
+        self._num_dim = len(limits)
+        self._param_min = [x[0] for x in limits]
+        self._param_max = [x[1] for x in limits]
+        self._param_rng = [x[1]-x[0] for x in limits]
+        self._sample = np.empty(shape=(0, self.num_dim+1), dtype=np.double)
+        self._queue = []
+        self._iter = 0
+        
+    def _validate_args(self):
+        """Check argument types, throw informative exceptions"""
+        # # objective
+        if not callable(self._objective):
+            raise TypeError('"objective" must be a callable')
+        # # limits 
+        if not isinstance(self._limits, list):
+            raise TypeError('"limits" must be a list')
+        for lim in self._limits:
+            if not isinstance(lim, tuple) or len(lim) != 2:
+                raise TypeError('"limits" elements must be length-2 tuples')
+            if lim[1] >= lim[0]:
+                raise ValueError('"limits" elements must be increasing')
+        # # num_samp
+        if int(self._num_samp) != self._num_samp:
+            raise TypeError('"num_samp" must be an integer')
+        if self._num_samp < 1:
+            raise ValueError('"num_samp" must be positive')
+        # # num_resamp
+        if int(self._num_resamp) != self._num_resamp: 
+            raise TypeError('"num_resamp" must be an integer')
+        if self._num_resamp < 1:
+            raise ValueError('"num_resamp" must be positive')    
+        if self._num_resamp > self._num_samp:
+            raise ValueError('"num_resamp must be <= "num_samp"')
+        # # maximize
+        if not isinstance(self._maximize, bool):
+            raise TypeError('maximize must be boolean: True or False')
+        # # verbose
+        if not isinstance(self._verbose, bool):
+            raise TypeError('verbose must be boolean: True or False')
+
+    # def as_dataframe(self):
+    #     """Return sampled population as Pandas dataframe"""
+    #     pop = [{'objective': x['result'], **(x['param']._asdict())}
+    #             for x in self.population] 
+    #     return pd.DataFrame(pop)
         
     def update(self, max_iter=10, tol=1.0e-3):
         """
