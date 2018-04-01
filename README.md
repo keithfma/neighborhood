@@ -39,6 +39,13 @@ srch.plot()
 
 Optimization is implemented, ensemble appraisal is in progress.
 
+## Testing
+
+This project uses [pytest](https://docs.pytest.org/en/latest/) for unit
+testing. The aim is not to be exhuastive, but to provide reasonable assurances
+that everything works as advertised. To run, simply call `pytest` from
+somewhere in this package.
+
 ## References
 
 1. Sambridge, M. (1999). Geophysical inversion with a neighbourhood algorithm -
