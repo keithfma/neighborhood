@@ -8,6 +8,7 @@ from .search import Searcher
 from .reference import rosenbrock
 from collections import defaultdict
 import numpy as np
+from pdb import set_trace
 
 
 LIMITS= (-1.5, 1.5)
@@ -40,6 +41,11 @@ def test_sampling(srch):
 
 def test_monotonic(srch):
     """Best objective function should be monotonically improving"""
-    srch.update(250)
-    for rec in srch.sample:
-        pass  
+    NUM_ITER = 250
+    srch.update(NUM_ITER)
+    df = srch.sample_dataframe
+    prev_best = float('inf')
+    for ii in range(NUM_ITER):
+        curr_best = min(df[df['iter'] <= ii]['result'])
+        assert(curr_best <= prev_best)
+        prev_best = curr_best
