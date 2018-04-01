@@ -22,6 +22,7 @@ setup(
         'numpy',
         'pandas',
         'matplotlib',
+        'seaborn',
         ],
     classifiers=[
         'Topic :: Scientific/Engineering',

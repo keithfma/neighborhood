@@ -11,7 +11,6 @@ import pandas as pd
 import seaborn
 from matplotlib import pyplot as plt
 from .reference import rosenbrock
-from pdb import set_trace
 
 
 class Searcher():
@@ -232,5 +231,5 @@ def demo_search(ndim=2, nsamp=10, nresamp=5, niter=100):
         verbose=True
         )
     srch.update(niter)
-    # srch.plot()
+    srch.plot()
     return srch
