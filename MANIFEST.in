@@ -1,1 +1,2 @@
-neighborhood/VERSION
+include neighborhood/VERSION
+include README.md

@@ -10,12 +10,18 @@ with open(os.path.join('neighborhood', 'VERSION'), 'r') as fp:
 if sys.version_info.major < 3:
     sys.exit("MACE requires Python 3")
 
+# read README
+with open('README.rst', 'r') as fp:
+    readme=fp.read()
+
 # install
 setup(
     name='neighborhood',
     version=version,
     description='Neighborhood Algorithm Optimization and Ensemble Appraisal',
+    long_description=readme,
     author='Keith Ma',
+    author_email='keithfma@gmail.com',
     url='https://github.com/keithfma/neighborhood',
     packages=find_packages(),
     include_package_data=True,

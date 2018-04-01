@@ -1,6 +1,6 @@
 # Neighborhood Algorithm Optimization and Ensemble Appraisal 
 
-Travis CI: [![](https://travis-ci.org/keithfma/neighborhood.svg?branch=master)](https://travis-ci.org/keithfma/neighborhood/branches)
+Travis CI: [![](https://travis-ci.org/keithfma/neighborhood.svg?branch=master)](https://travis-ci.org/keithfma/neighborhood/branches)   [Current Release on PyPI](https://pypi.python.org/pypi/neighborhood/)
 
 Python 3 implementation of "neighborhood algorithm" direct-search optimization
 and Bayesian ensemble appraisal. In short, a nearest-neighbor interpolant based
@@ -54,6 +54,8 @@ Release versions are tagged in the repository, built as distributions, and
 uploaded to PyPI. The minimal commands to do this are:
 
 ```bash
+# update PyPI-readable README
+pandoc --from=markdown --to=rst --output=README.rst README.md
 # build with setuptools
 python3 setup.py sdist bdist_wheel
 # upload to PyPI test server (then check it out)
@@ -64,6 +66,9 @@ twine upload dist/*
 git tag -a X.X.X -m "vX.X.X"
 git push origin --tags
 ```
+
+For now, it is necessary to manually "clean up" README.rst. In the future, it
+looks like PyPI will render the markdown directly.
 
 ## References
 
