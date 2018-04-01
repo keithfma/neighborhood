@@ -49,8 +49,8 @@ class Searcher():
         self._param_min = np.array([x[0] for x in limits])
         self._param_max = np.array([x[1] for x in limits])
         self._param_rng = np.array([x[1]-x[0] for x in limits])
-        self._sample = np.empty(shape=(0, self._num_dim+1), dtype=np.double)
-        self._queue = list() 
+        self._sample = []
+        self._queue = [] 
         self._iter = 0
         
     def _validate_args(self):
@@ -91,7 +91,7 @@ class Searcher():
     #             for x in self.population] 
     #     return pd.DataFrame(pop)
         
-    def update(self, max_iter=10, tol=1.0e-3):
+    def update(self, max_iter=10):
         """
         Execute search algorithm for specified number of iterations
         
@@ -102,28 +102,27 @@ class Searcher():
         for ii in range(max_iter):
             
             # generate new sample (populates queue)
-            if self._sample.shape[0] == 0:
+            if not self._sample:
                 self._random_sample()
             else:
                 raise NotImplementedError
                 #self._neighborhood_sample()
                         
-            # # execute forward model for all samples in queue
-            # while self.queue:
-            #     param = self.queue.pop()
-            #     result = self.objective(**param._asdict())
-            #     self.population.append({
-            #         'param': param,
-            #         'result': result,
-            #         'iter': self.iter
-            #         })
-            # 
-            # # prepare for next iteration
-            # self.population.sort(key=lambda x: x['result'], reverse=self.maximize)
-            # self.iter += 1
-            # if self.verbose:
-            #     print('iter: {}, pop size: {}, objective: {}'.format(self.iter,
-            #           len(self.population), self.population[0]['result']))
+            # execute forward model for all samples in queue
+            while self._queue:
+                param = self._queue.pop()
+                result = self._objective(param)
+                self._sample.append({
+                    'param': param,
+                    'result': result,
+                    'iter': self._iter
+                    })
+             
+            # prepare for next iteration
+            self._sample.sort(key=lambda x: x['result'], reverse=self._maximize)
+            self._iter += 1
+            if self._verbose:
+                print(self)
 
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
@@ -195,12 +194,13 @@ class Searcher():
     
     def __repr__(self):
         try:
-            out = '{}(samples={}, best={:.6e})'.format(
+            out = '{}(iteration={}, samples={}, best={:.6e})'.format(
                 self.__class__.__name__,
-                self._sample.shape[0],
-                self._sample[0][-1])
+                self._iter,
+                len(self._sample),
+                self._sample[0]['result'])
         except IndexError:
-            out = '{}(samples=0, best=None)'.format(self.__class__.__name__)
+            out = '{}(iteration=0, samples=0, best=None)'.format(self.__class__.__name__)
         return out
 
 
