@@ -102,7 +102,7 @@ class Searcher():
         for ii in range(max_iter):
             
             # generate new sample (populates queue)
-            if self._sample.shape[0]:
+            if self._sample.shape[0] == 0:
                 self._random_sample()
             else:
                 raise NotImplementedError
@@ -127,9 +127,9 @@ class Searcher():
 
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
-        self._sample = np.empty(shape=(self._num_samp, self._num_dim + 1), dtype=np.double)
-        self._sample[:, :self._num_dim] = np.random.rand(self._num_samp, self._num_dim) * self._param_rng + self._param_min
-        self._sample[:, -1] = np.nan
+        for ii in range(self._num_samp):
+            pt  = np.random.rand(self._num_dim)*self._param_rng + self._param_min
+            self._queue.append(pt)
 
     def _neighborhood_sample(self):
         """Generate random samples in best Voronoi polygons"""
