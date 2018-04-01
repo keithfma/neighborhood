@@ -23,6 +23,7 @@ setup(
         'pandas',
         'matplotlib',
         'seaborn',
+        'pytest',
         ],
     classifiers=[
         'Topic :: Scientific/Engineering',

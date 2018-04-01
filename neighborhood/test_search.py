@@ -6,9 +6,7 @@ Unit tests for neighborhood algorithm direct-search optimization
 import pytest
 from .search import Searcher
 from .reference import rosenbrock
-from collections import defaultdict
 import numpy as np
-from pdb import set_trace
 
 
 LIMITS= (-1.5, 1.5)
