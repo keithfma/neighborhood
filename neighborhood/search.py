@@ -9,6 +9,7 @@ from random import uniform
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from .reference import rosenbrock
 
 
 class Searcher():
@@ -48,7 +49,7 @@ class Searcher():
         self._param_min = [x[0] for x in limits]
         self._param_max = [x[1] for x in limits]
         self._param_rng = [x[1]-x[0] for x in limits]
-        self._sample = np.empty(shape=(0, self.num_dim+1), dtype=np.double)
+        self._sample = np.empty(shape=(0, self._num_dim+1), dtype=np.double)
         self._queue = []
         self._iter = 0
         
@@ -63,7 +64,7 @@ class Searcher():
         for lim in self._limits:
             if not isinstance(lim, tuple) or len(lim) != 2:
                 raise TypeError('"limits" elements must be length-2 tuples')
-            if lim[1] >= lim[0]:
+            if lim[1] <= lim[0]:
                 raise ValueError('"limits" elements must be increasing')
         # # num_samp
         if int(self._num_samp) != self._num_samp:
@@ -193,29 +194,30 @@ class Searcher():
     
     def __repr__(self):
         try:
-            out = '{}(pop_size={}, best={:.6e})'.format(
-                self.__class__.__name__, len(self.population), 
-                self.population[0]['result'])
+            out = '{}(samples={}, best={:.6e})'.format(
+                self.__class__.__name__,
+                self._sample.shape[0],
+                self._sample[0][-1])
         except IndexError:
-            out = '{}(pop_size=0)'.format(self.__class__.__name__)
+            out = '{}(samples=0, best=None)'.format(self.__class__.__name__)
         return out
 
 
-def demo_search():
+def demo_search(num_dim=2):
     """
     Run demonstration using Rosenbrock objective function, plot results
     
     Arguments:
+        ndim: number of dimensions in ND-Rosenbrock function
     """
     srch = Searcher(
-        na_objective=_rosenbrock,
-        na_num_samp=900,
-        na_num_resamp=450,
-        na_num_init=900,
-        na_maximize=False,
-        xx=(-1.5, 1.5),  # param to objective function
-        yy=(-0.5, 3.0)   # param to objective function
+        objective=rosenbrock,
+        limits=[(-1.5, 1.5) for _ in range(num_dim)],
+        num_samp=500,
+        num_resamp=250,
+        maximize=False,
+        verbose=True
         )
-    srch.update(20)
-    srch.plot()
+    # srch.update(20)
+    # srch.plot()
     return srch
