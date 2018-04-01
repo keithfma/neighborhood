@@ -1,6 +1,8 @@
 # Neighborhood Algorithm Optimization and Ensemble Appraisal 
 
-Travis CI: [![](https://travis-ci.org/keithfma/neighborhood.svg?branch=master)](https://travis-ci.org/keithfma/neighborhood/branches)   [Current Release on PyPI](https://pypi.python.org/pypi/neighborhood/)
+Travis CI: [![](https://travis-ci.org/keithfma/neighborhood.svg?branch=master)](https://travis-ci.org/keithfma/neighborhood/branches)
+
+[Current Release on PyPI](https://pypi.python.org/pypi/neighborhood/)
 
 Python 3 implementation of "neighborhood algorithm" direct-search optimization
 and Bayesian ensemble appraisal. In short, a nearest-neighbor interpolant based
