@@ -46,11 +46,11 @@ class Searcher():
 
         # init constants and working vars
         self._num_dim = len(limits)
-        self._param_min = [x[0] for x in limits]
-        self._param_max = [x[1] for x in limits]
-        self._param_rng = [x[1]-x[0] for x in limits]
+        self._param_min = np.array([x[0] for x in limits])
+        self._param_max = np.array([x[1] for x in limits])
+        self._param_rng = np.array([x[1]-x[0] for x in limits])
         self._sample = np.empty(shape=(0, self._num_dim+1), dtype=np.double)
-        self._queue = []
+        self._queue = list() 
         self._iter = 0
         
     def _validate_args(self):
@@ -102,33 +102,34 @@ class Searcher():
         for ii in range(max_iter):
             
             # generate new sample (populates queue)
-            if not self.population:
+            if self._sample.shape[0]:
                 self._random_sample()
             else:
-                self._neighborhood_sample()
+                raise NotImplementedError
+                #self._neighborhood_sample()
                         
-            # execute forward model for all samples in queue
-            while self.queue:
-                param = self.queue.pop()
-                result = self.objective(**param._asdict())
-                self.population.append({
-                    'param': param,
-                    'result': result,
-                    'iter': self.iter
-                    })
-            
-            # prepare for next iteration
-            self.population.sort(key=lambda x: x['result'], reverse=self.maximize)
-            self.iter += 1
-            if self.verbose:
-                print('iter: {}, pop size: {}, objective: {}'.format(self.iter,
-                      len(self.population), self.population[0]['result']))
+            # # execute forward model for all samples in queue
+            # while self.queue:
+            #     param = self.queue.pop()
+            #     result = self.objective(**param._asdict())
+            #     self.population.append({
+            #         'param': param,
+            #         'result': result,
+            #         'iter': self.iter
+            #         })
+            # 
+            # # prepare for next iteration
+            # self.population.sort(key=lambda x: x['result'], reverse=self.maximize)
+            # self.iter += 1
+            # if self.verbose:
+            #     print('iter: {}, pop size: {}, objective: {}'.format(self.iter,
+            #           len(self.population), self.population[0]['result']))
 
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
-        for ii in range(self.num_init):
-            new = {k: uniform(*v) for k, v in self.limits.items()}
-            self.queue.append(self.Param(**new))
+        self._sample = np.empty(shape=(self._num_samp, self._num_dim + 1), dtype=np.double)
+        self._sample[:, :self._num_dim] = np.random.rand(self._num_samp, self._num_dim) * self._param_rng + self._param_min
+        self._sample[:, -1] = np.nan
 
     def _neighborhood_sample(self):
         """Generate random samples in best Voronoi polygons"""
@@ -218,6 +219,6 @@ def demo_search(num_dim=2):
         maximize=False,
         verbose=True
         )
-    # srch.update(20)
+    # srch.update(1)
     # srch.plot()
     return srch
