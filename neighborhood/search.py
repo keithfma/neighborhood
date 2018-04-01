@@ -3,8 +3,7 @@
 Neighborhood algorithm direct-search optimization
 """
 
-from copy import deepcopy
-import collections
+from copy import copy, deepcopy
 from random import uniform
 import numpy as np
 import pandas as pd
