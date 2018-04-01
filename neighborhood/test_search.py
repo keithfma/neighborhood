@@ -32,20 +32,32 @@ def srch():
     
 def test_sampling(srch):
     """Sampler should choose NUM_SAMP points in best NUM_RESAMP nbrhoods"""
-    for ii in range(3):
-        samp = srch.sample
-        # TODO: confirm expected num samples
-        # TODO: confirm curr iter samples best nbrhoods in prev iter
+    NUM_ITER = 10
+    srch.update(1)
+    for ii in range(1, NUM_ITER):
         srch.update(1)
+        samp = srch.sample_dataframe
+        # confirm expected num samples
+        assert(samp.shape[0] == (ii + 1)*NUM_SAMP)
+        # confirm curr iter samples best nbrhoods in prev iter
+        prev = samp[samp['iter'] < ii].sort_values(by='result')
+        prev_pts = prev.drop(['iter', 'result'], axis=1)
+        curr = samp[samp['iter'] == ii] 
+        curr_pts = curr.drop(['iter', 'result'], axis=1)
+        for ii in range(NUM_SAMP):
+            pt = curr_pts.iloc[ii]
+            dist2 = ((pt - prev_pts)**2).sum(axis=1)
+            nearest_rank = dist2.values.argmin()
+            assert(nearest_rank < NUM_RESAMP)
 
 
 def test_monotonic(srch):
     """Best objective function should be monotonically improving"""
-    NUM_ITER = 250
+    NUM_ITER = 50
     srch.update(NUM_ITER)
-    df = srch.sample_dataframe
+    samp = srch.sample_dataframe
     prev_best = float('inf')
     for ii in range(NUM_ITER):
-        curr_best = min(df[df['iter'] <= ii]['result'])
+        curr_best = min(samp[samp['iter'] <= ii]['result'])
         assert(curr_best <= prev_best)
         prev_best = curr_best
