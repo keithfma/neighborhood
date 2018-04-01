@@ -48,6 +48,23 @@ testing. The aim is not to be exhuastive, but to provide reasonable assurances
 that everything works as advertised. To run, simply call `pytest --verbose` from
 somewhere in this package.
 
+## Release 
+
+Release versions are tagged in the repository, built as distributions, and
+uploaded to PyPI. The minimal commands to do this are:
+
+```bash
+# build with setuptools
+python3 setup.py sdist bdist_wheel
+# upload to PyPI test server (then check it out)
+twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+# upload to PyPI
+twine upload dist/*
+# tag release in git repo
+git tag -a X.X.X -m "vX.X.X"
+git push origin --tags
+```
+
 ## References
 
 1. Sambridge, M. (1999). Geophysical inversion with a neighbourhood algorithm -

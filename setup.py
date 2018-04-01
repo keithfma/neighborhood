@@ -15,6 +15,7 @@ setup(
     name='neighborhood',
     version=version,
     description='Neighborhood Algorithm Optimization and Ensemble Appraisal',
+    author='Keith Ma',
     url='https://github.com/keithfma/neighborhood',
     packages=find_packages(),
     include_package_data=True,

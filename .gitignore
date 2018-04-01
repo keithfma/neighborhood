@@ -2,3 +2,5 @@
 *.egg-info/**
 .*.swp
 **/.pytest_cache/*
+dist/*
+build/*
