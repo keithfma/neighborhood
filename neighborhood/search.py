@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from .reference import rosenbrock
+from pdb import set_trace
 
 
 class Searcher():
@@ -105,8 +106,7 @@ class Searcher():
             if not self._sample:
                 self._random_sample()
             else:
-                raise NotImplementedError
-                #self._neighborhood_sample()
+                self._neighborhood_sample()
                         
             # execute forward model for all samples in queue
             while self._queue:
@@ -133,13 +133,13 @@ class Searcher():
     def _neighborhood_sample(self):
         """Generate random samples in best Voronoi polygons"""
         
-        vv = np.array([x['param'] for x in self.population])
-        vv = (vv - self.min_param)/self.rng_param # normalize
+        vv = np.array([x['param'] for x in self._sample])
+        vv = (vv - self._param_min)/self._param_rng # normalize
         
-        for ii in range(self.num_samp):
+        for ii in range(self._num_samp):
             
             # get starting point and all other points as arrays
-            kk = ii % self.num_resamp  # index of start point            
+            kk = ii % self._num_resamp  # index of start point            
             vk = vv[kk,:]
             vj = np.delete(vv, kk, 0)
             xx = vk.copy()
@@ -149,7 +149,7 @@ class Searcher():
             d2ji = np.sum(np.square(vj[:,1:] - xx[1:]), axis=1)
             
             # random step within voronoi polygon in each dimension
-            for ii in range(self.num_dim):
+            for ii in range(self._num_dim):
                 
                 # find limits of voronoi polygon
                 xji = 0.5*(vk[ii] + vj[:,ii] + (d2ki - d2ji)/(vk[ii] - vj[:,ii]))
@@ -166,15 +166,15 @@ class Searcher():
                 xx[ii] = uniform(low, high)
                 
                 # update distance to next axis
-                if ii < (self.num_dim - 1):
+                if ii < (self._num_dim - 1):
                     d2ki += (np.square(vk[ii  ] - xx[ii  ]) - 
                              np.square(vk[ii+1] - xx[ii+1]))
                     d2ji += (np.square(vj[:,ii  ] - xx[ii  ]) - 
                              np.square(vj[:,ii+1] - xx[ii+1]))
                     
             # update queue
-            xx = xx*self.rng_param + self.min_param # un-normalize    
-            self.queue.append(self.Param(*xx))
+            xx = xx*self._param_rng + self._param_min # un-normalize
+            self._queue.append(xx)
 
     def plot(self):
         """
@@ -204,21 +204,23 @@ class Searcher():
         return out
 
 
-def demo_search(num_dim=2):
+def demo_search(ndim=2, nsamp=10, nresamp=5):
     """
     Run demonstration using Rosenbrock objective function, plot results
     
     Arguments:
         ndim: number of dimensions in ND-Rosenbrock function
+        nsamp: number of samples for each iteration
+        nresamp: number of "best" regions to re-sample for next iteration
     """
     srch = Searcher(
         objective=rosenbrock,
-        limits=[(-1.5, 1.5) for _ in range(num_dim)],
-        num_samp=500,
-        num_resamp=250,
+        limits=[(-1.5, 1.5) for _ in range(ndim)],
+        num_samp=nsamp,
+        num_resamp=nresamp,
         maximize=False,
         verbose=True
         )
-    # srch.update(1)
+    srch.update(1000)
     # srch.plot()
     return srch
