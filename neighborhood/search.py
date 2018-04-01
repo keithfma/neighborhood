@@ -109,12 +109,35 @@ class Searcher():
     def plot(self):
         """Pair-plots of sample distribution"""
         df = self.sample_dataframe
-        grd = seaborn.PairGrid(data=df, vars=self._names)
-        grd = grd.map_upper(plt.scatter, marker='+')
-        grd = grd.map_diag(seaborn.kdeplot, legend=False)
-        grd = grd.map_lower(seaborn.kdeplot, cmap="Blues", shade=True, shade_lowest=True)
+        for kk in range(self._num_dim**2):
+            plt.subplot(self._num_dim, self._num_dim, kk+1)
+            # get row
+            ii = int(kk / self._num_dim)
+            iname = self._names[ii]
+            idata = df[iname]
+            # get col
+            jj = kk % self._num_dim
+            jname = self._names[jj]
+            jdata = df[jname]
+            if ii < jj:
+                # upper tri: scatter plot
+                plt.scatter(idata, jdata, c=df['result'], marker='+')
+                plt.xlim(self._limits[ii])
+                plt.ylim(self._limits[jj])
+            elif ii == jj: 
+                # diagonal: marginal KDE
+                seaborn.kdeplot(idata)
+                plt.xlim(self._limits[ii])
+            elif ii > jj:
+                # lower tri: 2D KDE 
+                seaborn.kdeplot(jdata, idata, cmap='Blues', shade=True,
+                                shade_lowest=True)
+                plt.xlim(self._limits[ii])
+                plt.ylim(self._limits[jj])
+                plt.xlabel('')
+                plt.ylabel('')
         plt.subplots_adjust(top=0.9)
-        grd.fig.suptitle('2D Densities (Lower), 1D Densities (Diag), 2D Scatter (Upper)') 
+        plt.suptitle('2D Densities (Lower), 1D Densities (Diag), 2D Scatter (Upper)') 
         plt.show()        
 
     def _random_sample(self):
