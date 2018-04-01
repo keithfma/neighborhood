@@ -8,6 +8,7 @@ import collections
 from random import uniform
 import numpy as np
 import pandas as pd
+import seaborn
 from matplotlib import pyplot as plt
 from .reference import rosenbrock
 from pdb import set_trace
@@ -15,7 +16,7 @@ from pdb import set_trace
 
 class Searcher():
     
-    def __init__(self, objective, limits, num_samp, num_resamp, maximize=False, verbose=True):
+    def __init__(self, objective, limits, num_samp, num_resamp, names=[], maximize=False, verbose=True):
         """
         Neighborhood algorithm direct-search optimization
         
@@ -27,6 +28,8 @@ class Searcher():
             num_samp: int, number of random samples taken at each iteration.
             num_resamp: int, number of best Voronoi polygons sampled at
                 each iteration.
+            names: list of strings, names for objective function parameters,
+                used for plotting, and totally optional
             maximize: boolean, set True to maximize the objective function,
                 or false to minimize it.
             verbose: set True to print verbose progress messages
@@ -41,6 +44,10 @@ class Searcher():
         self._limits = deepcopy(limits)
         self._num_samp = num_samp
         self._num_resamp = num_resamp
+        if names:
+            self._names = copy(_names)
+        else: 
+            self._names = ['x{}'.format(ii) for ii in range(len(limits))]
         self._maximize = maximize
         self._verbose = verbose
         self._validate_args()
@@ -54,45 +61,20 @@ class Searcher():
         self._queue = [] 
         self._iter = 0
         
-    def _validate_args(self):
-        """Check argument types, throw informative exceptions"""
-        # # objective
-        if not callable(self._objective):
-            raise TypeError('"objective" must be a callable')
-        # # limits 
-        if not isinstance(self._limits, list):
-            raise TypeError('"limits" must be a list')
-        for lim in self._limits:
-            if not isinstance(lim, tuple) or len(lim) != 2:
-                raise TypeError('"limits" elements must be length-2 tuples')
-            if lim[1] <= lim[0]:
-                raise ValueError('"limits" elements must be increasing')
-        # # num_samp
-        if int(self._num_samp) != self._num_samp:
-            raise TypeError('"num_samp" must be an integer')
-        if self._num_samp < 1:
-            raise ValueError('"num_samp" must be positive')
-        # # num_resamp
-        if int(self._num_resamp) != self._num_resamp: 
-            raise TypeError('"num_resamp" must be an integer')
-        if self._num_resamp < 1:
-            raise ValueError('"num_resamp" must be positive')    
-        if self._num_resamp > self._num_samp:
-            raise ValueError('"num_resamp must be <= "num_samp"')
-        # # maximize
-        if not isinstance(self._maximize, bool):
-            raise TypeError('maximize must be boolean: True or False')
-        # # verbose
-        if not isinstance(self._verbose, bool):
-            raise TypeError('verbose must be boolean: True or False')
+    @property
+    def sample(self):
+        return deepcopy(self._sample)
 
-    # def as_dataframe(self):
-    #     """Return sampled population as Pandas dataframe"""
-    #     pop = [{'objective': x['result'], **(x['param']._asdict())}
-    #             for x in self.population] 
-    #     return pd.DataFrame(pop)
-        
-    def update(self, max_iter=10):
+    @property
+    def sample_dataframe(self):
+        samps = self.sample
+        for samp in samps:
+            for name, val in zip(self._names, samp['param']):
+                samp[name] = val
+            del samp['param']
+        return pd.DataFrame(samps)
+
+    def update(self, num_iter=10):
         """
         Execute search algorithm for specified number of iterations
         
@@ -100,7 +82,7 @@ class Searcher():
             num_iter: int, number of iterations to run
         """
         
-        for ii in range(max_iter):
+        for ii in range(num_iter):
             
             # generate new sample (populates queue)
             if not self._sample:
@@ -123,6 +105,17 @@ class Searcher():
             self._iter += 1
             if self._verbose:
                 print(self)
+    
+    def plot(self):
+        """Pair-plots of sample distribution"""
+        df = self.sample_dataframe
+        grd = seaborn.PairGrid(data=df, vars=self._names)
+        grd = grd.map_upper(plt.scatter, marker='+')
+        grd = grd.map_diag(seaborn.kdeplot, legend=False)
+        grd = grd.map_lower(seaborn.kdeplot, cmap="Blues", shade=True, shade_lowest=True)
+        plt.subplots_adjust(top=0.9)
+        grd.fig.suptitle('2D Densities (Lower), 1D Densities (Diag), 2D Scatter (Upper)') 
+        plt.show()        
 
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
@@ -175,23 +168,39 @@ class Searcher():
             # update queue
             xx = xx*self._param_rng + self._param_min # un-normalize
             self._queue.append(xx)
-
-    def plot(self):
-        """
-        Display pair-plots of objective function values for current population
-        """
-        if self.num_dim == 2:
-            df = self.as_dataframe()
-            df.plot.scatter(
-                x=df.columns[1],
-                y=df.columns[2],
-                c='objective',
-                colormap=plt.get_cmap('plasma')
-                )
-            plt.show()        
-        else:
-            raise NotImplementedError('Plotting not yet implemented in > 2D')
     
+    def _validate_args(self):
+        """Check argument types, throw informative exceptions"""
+        # # objective
+        if not callable(self._objective):
+            raise TypeError('"objective" must be a callable')
+        # # limits 
+        if not isinstance(self._limits, list):
+            raise TypeError('"limits" must be a list')
+        for lim in self._limits:
+            if not isinstance(lim, tuple) or len(lim) != 2:
+                raise TypeError('"limits" elements must be length-2 tuples')
+            if lim[1] <= lim[0]:
+                raise ValueError('"limits" elements must be increasing')
+        # # num_samp
+        if int(self._num_samp) != self._num_samp:
+            raise TypeError('"num_samp" must be an integer')
+        if self._num_samp < 1:
+            raise ValueError('"num_samp" must be positive')
+        # # num_resamp
+        if int(self._num_resamp) != self._num_resamp: 
+            raise TypeError('"num_resamp" must be an integer')
+        if self._num_resamp < 1:
+            raise ValueError('"num_resamp" must be positive')    
+        if self._num_resamp > self._num_samp:
+            raise ValueError('"num_resamp must be <= "num_samp"')
+        # # maximize
+        if not isinstance(self._maximize, bool):
+            raise TypeError('maximize must be boolean: True or False')
+        # # verbose
+        if not isinstance(self._verbose, bool):
+            raise TypeError('verbose must be boolean: True or False')
+
     def __repr__(self):
         try:
             out = '{}(iteration={}, samples={}, best={:.6e})'.format(
@@ -204,7 +213,7 @@ class Searcher():
         return out
 
 
-def demo_search(ndim=2, nsamp=10, nresamp=5):
+def demo_search(ndim=2, nsamp=10, nresamp=5, niter=100):
     """
     Run demonstration using Rosenbrock objective function, plot results
     
@@ -212,6 +221,7 @@ def demo_search(ndim=2, nsamp=10, nresamp=5):
         ndim: number of dimensions in ND-Rosenbrock function
         nsamp: number of samples for each iteration
         nresamp: number of "best" regions to re-sample for next iteration
+        niter: number of iterations to run
     """
     srch = Searcher(
         objective=rosenbrock,
@@ -221,6 +231,6 @@ def demo_search(ndim=2, nsamp=10, nresamp=5):
         maximize=False,
         verbose=True
         )
-    srch.update(1000)
+    srch.update(niter)
     # srch.plot()
     return srch
