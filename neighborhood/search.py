@@ -104,8 +104,15 @@ class Searcher():
             if self._verbose:
                 print(self)
     
-    def plot(self):
-        """Pair-plots of sample distribution"""
+    def plot(self, size=None, filename=None):
+        """
+        Pair-plots of sample distribution
+        
+        Arguments:
+            size: figure (width, height) in inches
+            filename: string, provide a file name to save the figure to, if
+                None the figure is displayed instead
+        """
         df = self.sample_dataframe
 
         # get names of variables to plot
@@ -123,6 +130,8 @@ class Searcher():
 
         # main loop, populate grid and titles
         fig, axs = plt.subplots(nrows=num_vars, ncols=num_vars)
+        if size:
+            fig.set_size_inches(size)
         fig.subplots_adjust(hspace=0.2, wspace=0.2)
         for ii in range(num_vars):
             for jj in range(num_vars):
@@ -151,14 +160,20 @@ class Searcher():
                         axs[ii][jj].set_xlabel('')
                     if jj != 0:
                         axs[ii][jj].set_ylabel('')
+                    ax.set_xlim(var_limits[var_names[jj]])
+                    ax.set_ylim(var_limits[var_names[ii]])
+
         ttl = [
             '2D PDFs (lower), 1D PDFs (diag), 2D Scatter (upper)',
             'Best = {:.4f}'.format(df['result'][0]),
              ]
         fig.suptitle('\n'.join(ttl))
+        fig.subplots_adjust(hspace=0.4, wspace=0.4)
 
-        fig.subplots_adjust(hspace=0.25, wspace=0.25)
-        fig.show()
+        if filename:
+            # TODO: save to file
+        else:
+            fig.show()
 
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
