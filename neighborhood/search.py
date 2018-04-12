@@ -10,6 +10,8 @@ import pandas as pd
 import seaborn
 from matplotlib import pyplot as plt
 from .reference import rosenbrock
+import json
+import os
 
 
 class Searcher():
@@ -103,6 +105,40 @@ class Searcher():
             self._iter += 1
             if self._verbose:
                 print(self)
+
+    def to_json(self, filename, clobber=False):
+        """
+        Write search data to file as JSON
+
+        NOTE: *cannot save the objective function*, converting to JSON is a
+            one-way trip
+
+        Arguments:
+            filename: string, path to file to write
+            clobber: set True to allow overwriting, False to prevent it
+        """
+        # check that it is safe to write
+        if os.path.isfile(filename) and not clobber:
+            raise ValueError('file "{}" exists and clobber is off'.format(filename))
+
+        # make sample serializable
+        sample_out = self.sample
+        for this in sample_out:
+            this['param'] = list(this['param'])
+
+        # gather and write data
+        data = {
+            'limits': self._limits,
+            'num_samp': self._num_samp,
+            'num_resamp': self._num_resamp,
+            'names': self._names,
+            'maximize': self._maximize,
+            'iter': self._iter,
+            'sample': sample_out,
+            }
+        with open(filename, 'w') as fp:
+            json.dump(data, fp, indent=4)
+
     
     def plot(self, size=None, filename=None):
         """
@@ -165,7 +201,8 @@ class Searcher():
 
         ttl = [
             '2D PDFs (lower), 1D PDFs (diag), 2D Scatter (upper)',
-            'Best = {:.4f}'.format(df['result'][0]),
+            'Iteration: {}, Samples: {}, Best = {:.4f}'.format(
+                self._iter, len(self._sample), df['result'][0]),
              ]
         fig.suptitle('\n'.join(ttl))
         fig.subplots_adjust(hspace=0.4, wspace=0.4)
