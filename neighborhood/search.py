@@ -43,7 +43,7 @@ class Searcher():
         self._num_samp = num_samp
         self._num_resamp = num_resamp
         if names:
-            self._names = copy(_names)
+            self._names = copy(names)
         else: 
             self._names = ['x{}'.format(ii) for ii in range(len(limits))]
         self._maximize = maximize
