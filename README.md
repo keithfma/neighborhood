@@ -13,7 +13,8 @@ the references.
 
 | ![Example search population for 4D Rosenbrock objective function](example_rosenbrock_4d.png?raw=true) |
 | :----: |
-| Example search population for 4D Rosenbrock objective function. Image include 5000 samples collected in 500 iterations of the neighborhood algorithm direct search, with `num_samp=10` and `num_resamp=5`. The true minimum is `0` at `(1, 1, 1, 1)`, while best sample is `0.0397` at `([0.9559, 0.9110 , 0.8295, 0.6875)`. This result continues to converge for larger sample size (but the plot is less interesting since the density converges to a point!)|
+| Example search population for 4D Rosenbrock objective function. Image include 10,000 samples collected in 1,000 iterations of the neighborhood algorithm direct search, with `num_samp=10` and `num_resamp=5`. The true minimum is `0` at `(1, 1, 1, 1)`, while best sample is `0.0113` at `(0.976, 0.953, 0.908, 0.824)`. This result continues to converge for larger sample size (but the plot is less interesting since the density converges to a point!)|
+
 
 To generate the example figure above, you can run the internal demo, like so:
 ```python

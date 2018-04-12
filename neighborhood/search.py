@@ -43,7 +43,7 @@ class Searcher():
         self._num_samp = num_samp
         self._num_resamp = num_resamp
         if names:
-            self._names = copy(_names)
+            self._names = copy(names)
         else: 
             self._names = ['x{}'.format(ii) for ii in range(len(limits))]
         self._maximize = maximize
@@ -107,13 +107,58 @@ class Searcher():
     def plot(self):
         """Pair-plots of sample distribution"""
         df = self.sample_dataframe
-        grd = seaborn.PairGrid(data=df, vars=self._names)
-        grd = grd.map_upper(plt.scatter, marker='+')
-        grd = grd.map_diag(seaborn.kdeplot, legend=False)
-        grd = grd.map_lower(seaborn.kdeplot, cmap="Blues", shade=True, shade_lowest=True)
-        plt.subplots_adjust(top=0.9)
-        grd.fig.suptitle('2D Densities (Lower), 1D Densities (Diag), 2D Scatter (Upper)') 
-        plt.show()        
+
+        # get names of variables to plot
+        var_names = set(df.columns)
+        var_names.discard('iter')
+        var_names.discard('result')
+        var_names = list(var_names)
+        num_vars = len(var_names)
+
+        # get axis limits for each variable
+        var_limits = {}
+        for name in var_names:
+            idx = self._names.index(name)
+            var_limits[name] = self._limits[idx]
+
+        # main loop, populate grid and titles
+        fig, axs = plt.subplots(nrows=num_vars, ncols=num_vars)
+        fig.subplots_adjust(hspace=0.2, wspace=0.2)
+        for ii in range(num_vars):
+            for jj in range(num_vars):
+                ax = axs[ii][jj]
+                if ii == jj: 
+                    # diagonal, plot 1D KDE
+                    series = df[var_names[ii]]
+                    series.plot.kde(ax=ax, xlim=var_limits[var_names[ii]])
+                    axs[ii][jj].set_yticklabels([], fontdict=None, minor=False)
+                elif ii < jj:
+                    # upper triangle, plot scatter colored by result value
+                    xx = df[var_names[jj]]
+                    yy = df[var_names[ii]]
+                    zz = df['result']
+                    ax.scatter(xx, yy, c=zz)
+                    for tick in ax.get_yticklabels():
+                            tick.set_rotation(45)
+                elif ii > jj:
+                    # lower triangle, plot 2D KDE
+                    xx = df[var_names[jj]]
+                    yy = df[var_names[ii]]
+                    seaborn.kdeplot(xx, yy, ax=ax, cmap="Blues", shade=True, shade_lowest=True)
+                    for tick in ax.get_yticklabels():
+                            tick.set_rotation(45)
+                    if ii != num_vars - 1:
+                        axs[ii][jj].set_xlabel('')
+                    if jj != 0:
+                        axs[ii][jj].set_ylabel('')
+        ttl = [
+            '2D PDFs (lower), 1D PDFs (diag), 2D Scatter (upper)',
+            'Best = {:.4f}'.format(df['result'][0]),
+             ]
+        fig.suptitle('\n'.join(ttl))
+
+        fig.subplots_adjust(hspace=0.25, wspace=0.25)
+        fig.show()
 
     def _random_sample(self):
         """Generate uniform random sample for initial iteration"""
