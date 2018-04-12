@@ -171,7 +171,7 @@ class Searcher():
         fig.subplots_adjust(hspace=0.4, wspace=0.4)
 
         if filename:
-            # TODO: save to file
+            fig.savefig(filename)
         else:
             fig.show()
 
